@@ -1,0 +1,33 @@
+# 探測 GitHub Actions（Azure IP）打不打得通證交所／櫃買／集保。
+#
+# 為什麼要測：家用電腦不會 24 小時開機，但有幾個端點是「今天不抓就永遠沒有」
+# 的。GitHub Actions 免費又有排程，但**證交所常擋資料中心 IP**，而 Actions
+# 走的是 Azure 的 IP 段。蓋任何東西之前要先知道能不能用。
+#
+# 這是受控比較：同一支程式，本機跑一次、這裡跑一次，兩邊 IP 一比就知道。
+# 本機基準線見 README.md。
+#
+# 怎麼跑：Actions 分頁 → 左邊選 probe-endpoints → Run workflow
+# 任何一個端點打不通就回傳非零離開碼，Actions 會顯示紅燈。
+
+name: probe-endpoints
+
+on:
+  workflow_dispatch:        # 只手動觸發。這是一次性探測，不是排程
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 這支程式刻意只依賴 requests（urllib3 隨 requests 附帶）
+      - run: pip install --quiet requests
+
+      - name: 探測五個端點
+        run: python probe_endpoints.py
